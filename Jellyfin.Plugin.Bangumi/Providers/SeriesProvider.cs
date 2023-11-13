@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,8 +40,18 @@ public class SeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>, IHasO
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
 
         var bangumiId = baseName.GetAttributeValue("bangumi");
-        if (!string.IsNullOrEmpty(bangumiId) && !info.HasProviderId(Constants.ProviderName))
+        if (!string.IsNullOrEmpty(bangumiId))
             info.SetProviderId(Constants.ProviderName, bangumiId);
+
+        // 尝试从子文件夹中找到最小的id
+        var ids = new List<int>();
+        foreach (var id in Directory.GetDirectories(info.Path).Select(x => Path.GetFileName(x).GetAttributeValue("bangumi")))
+        {
+            if (!string.IsNullOrEmpty(id) && int.TryParse(id, out var num))
+                ids.Add(num);
+        }
+        if (ids.Any() && !info.HasProviderId(Constants.ProviderName))
+            info.SetProviderId(Constants.ProviderName, ids.Min().ToString());
 
         int subjectId;
         if (localConfiguration.Id != 0)

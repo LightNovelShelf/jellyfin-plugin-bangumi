@@ -40,7 +40,7 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
 
         var bangumiId = baseName.GetAttributeValue("bangumi");
-        if (!string.IsNullOrEmpty(bangumiId) && !info.HasProviderId(Constants.ProviderName))
+        if (!string.IsNullOrEmpty(bangumiId))
             info.SetProviderId(Constants.ProviderName, bangumiId);
 
         int subjectId;
