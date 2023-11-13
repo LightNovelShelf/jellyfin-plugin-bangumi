@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -8,17 +9,21 @@ using Jellyfin.Plugin.Bangumi.Configuration;
 using Jellyfin.Plugin.Bangumi.Model;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Bangumi.Providers;
 
 public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder
 {
     private readonly BangumiApi _api;
+    private readonly ILogger<SeasonProvider> _log;
 
-    public SeasonProvider(BangumiApi api)
+    public SeasonProvider(BangumiApi api,ILogger<SeasonProvider> log)
     {
         _api = api;
+        _log = log;
     }
 
     private static PluginConfiguration Configuration => Plugin.Instance!.Configuration;
@@ -30,8 +35,13 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
     public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        var baseName = Path.GetFileName(info.Path);
         var result = new MetadataResult<Season> { ResultLanguage = Constants.Language };
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
+
+        var bangumiId = baseName.GetAttributeValue("bangumi");
+        if (!string.IsNullOrEmpty(bangumiId) && !info.HasProviderId(Constants.ProviderName))
+            info.SetProviderId(Constants.ProviderName, bangumiId);
 
         int subjectId;
         if (localConfiguration.Id != 0)
